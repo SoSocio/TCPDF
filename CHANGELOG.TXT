@@ -1,3 +1,22 @@
+6.0.082 (2014-05-23)
+	- Bug item #926 "test statement instead of assignment used in tcpdf_fonts.php" was fixed.
+	- Bug item #925 "924 transparent images bug" was fixed.
+
+6.0.081 (2014-05-22)
+	- Bug item #922 "writehtml tables thead repeating" was fixed.
+	- Patch #71 "External and internal links, local and remote" wa applied.
+
+6.0.080 (2014-05-20)
+	- Bug item #921 "Fatal error in hyphenateText() function" was fixed.
+	- Bug item #923 "Automatic Hyphenation error" was fixed.
+	- Patch #70 "Augument TCPDFBarcode classes with ability to return raw png image data" was applied.
+
+6.0.079 (2014-05-19)
+	- Patch item #69 "Named destinations, HTML internal and external links" was merged.
+	- Bug item #920 "hyphenateText() should not hyphenate the content of style-tags in HTML mode" was fixed.
+	- Image method now trigs an error in case the cache is now writeable.
+	- Fixed issue with layer default status.
+
 6.0.078 (2014-05-12)
 	- A warning issue in addTTFfont() method was fixed.
 	- Fonts were updated to include cbbox metrics.

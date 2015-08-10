@@ -1,9 +1,9 @@
 <?php
 //============================================================+
 // File name   : tcpdf.php
-// Version     : 6.0.078
+// Version     : 6.0.082
 // Begin       : 2002-08-03
-// Last Update : 2014-05-06
+// Last Update : 2014-05-23
 // Author      : Nicola Asuni - Tecnick.com LTD - www.tecnick.com - info@tecnick.com
 // License     : GNU-LGPL v3 (http://www.gnu.org/copyleft/lesser.html)
 // -------------------------------------------------------------------
@@ -104,7 +104,7 @@
  * Tools to encode your unicode fonts are on fonts/utils directory.</p>
  * @package com.tecnick.tcpdf
  * @author Nicola Asuni
- * @version 6.0.078
+ * @version 6.0.082
  */
 
 // TCPDF configuration
@@ -128,7 +128,7 @@ require_once(dirname(__FILE__).'/include/tcpdf_static.php');
  * TCPDF project (http://www.tcpdf.org) has been originally derived in 2002 from the Public Domain FPDF class by Olivier Plathey (http://www.fpdf.org), but now is almost entirely rewritten.<br>
  * @package com.tecnick.tcpdf
  * @brief PHP class for generating PDF documents without requiring external extensions.
- * @version 6.0.078
+ * @version 6.0.082
  * @author Nicola Asuni - info@tecnick.com
  */
 class TCPDF {
@@ -6861,6 +6861,9 @@ class TCPDF {
 			$original_file = $file;
 			$file = TCPDF_STATIC::getObjFilename('img');
 			$fp = fopen($file, 'w');
+			if (!$fp) {
+				$this->Error('Unable to write file: '.$file);
+			}
 			fwrite($fp, $imgdata);
 			fclose($fp);
 			unset($imgdata);
@@ -8398,8 +8401,20 @@ class TCPDF {
 									$jsa = 'var D=event.target.doc;var MyData=D.dataObjects;for (var i in MyData) if (MyData[i].path=="'.$filename.'") D.exportDataObject( { cName : MyData[i].name, nLaunch : 2});';
 									$annots .= ' /A << /S /JavaScript /JS '.$this->_textstring($jsa, $annot_obj_id).'>>';
 								} else {
-									// external URI link
-									$annots .= ' /A <</S /URI /URI '.$this->_datastring($this->unhtmlentities($pl['txt']), $annot_obj_id).'>>';
+									$parsedUrl = parse_url($pl['txt']);
+									if (empty($parsedUrl['scheme']) AND (strtolower(substr($parsedUrl['path'], -4)) == '.pdf')) {
+										// relative link to a PDF file
+										$dest = '[0 /Fit]'; // default page 0
+										if (!empty($parsedUrl['fragment'])) {
+											// check for named destination
+											$tmp = explode('=', $parsedUrl['fragment']);
+											$dest = '('.((count($tmp) == 2) ? $tmp[1] : $tmp[0]).')';
+										}
+										$annots .= ' /A <</S /GoToR /D '.$dest.' /F '.$this->_datastring($this->unhtmlentities($parsedUrl['path']), $annot_obj_id).' /NewWindow true>>';
+									} else {
+										// external URI link
+										$annots .= ' /A <</S /URI /URI '.$this->_datastring($this->unhtmlentities($pl['txt']), $annot_obj_id).'>>';
+									}
 								}
 							} elseif (isset($this->links[$pl['txt']])) {
 								// internal link ID
@@ -9176,10 +9191,30 @@ class TCPDF {
 				if (isset($info['trns']) AND is_array($info['trns'])) {
 					$trns = '';
 					$count_info = count($info['trns']);
-					for ($i=0; $i < $count_info; ++$i) {
-						$trns .= $info['trns'][$i].' '.$info['trns'][$i].' ';
+					if ($info['cs'] == 'Indexed') {
+						$maxval =(pow(2, $info['bpc']) - 1);
+						for ($i = 0; $i < $count_info; ++$i) {
+							if (($info['trns'][$i] != 0) AND ($info['trns'][$i] != $maxval)) {
+								// this is not a binary type mask @TODO: create a SMask
+								$trns = '';
+								break;
+							} elseif (empty($trns) AND ($info['trns'][$i] == 0)) {
+								// store the first fully transparent value
+								$trns .= $i.' '.$i.' ';
+							}
+						}
+					} else {
+						// grayscale or RGB
+						for ($i = 0; $i < $count_info; ++$i) {
+							if ($info['trns'][$i] == 0) {
+								$trns .= $info['trns'][$i].' '.$info['trns'][$i].' ';
+							}
+						}
 					}
-					$out .= ' /Mask ['.$trns.']';
+					// Colour Key Masking
+					if (!empty($trns)) {
+						$out .= ' /Mask ['.$trns.']';
+					}
 				}
 				$stream = $this->_getrawstream($info['data']);
 				$out .= ' /Length '.strlen($stream).' >>';
@@ -9713,17 +9748,13 @@ class TCPDF {
 		//$out .= ' /PieceInfo <<>>';
 		if (!empty($this->pdflayers)) {
 			$lyrobjs = '';
-			$lyrobjs_print = '';
-			$lyrobjs_view = '';
+			$lyrobjs_off = '';
 			$lyrobjs_lock = '';
 			foreach ($this->pdflayers as $layer) {
 				$layer_obj_ref = ' '.$layer['objid'].' 0 R';
 				$lyrobjs .= $layer_obj_ref;
-				if ($layer['print']) {
-					$lyrobjs_print .= $layer_obj_ref;
-				}
-				if ($layer['view']) {
-					$lyrobjs_view .= $layer_obj_ref;
+				if ($layer['view'] === false) {
+					$lyrobjs_off .= $layer_obj_ref;
 				}
 				if ($layer['lock']) {
 					$lyrobjs_lock .= $layer_obj_ref;
@@ -9734,8 +9765,7 @@ class TCPDF {
 			$out .= ' /Name '.$this->_textstring('Layers', $oid);
 			$out .= ' /Creator '.$this->_textstring('TCPDF', $oid);
 			$out .= ' /BaseState /ON';
-			$out .= ' /ON ['.$lyrobjs_print.']';
-			$out .= ' /OFF ['.$lyrobjs_view.']';
+			$out .= ' /OFF ['.$lyrobjs_off.']';
 			$out .= ' /Locked ['.$lyrobjs_lock.']';
 			$out .= ' /Intent /View';
 			$out .= ' /AS [';
@@ -18445,6 +18475,9 @@ Putting 1 is equivalent to putting 0 and calling Ln() just after. Default value:
 					foreach ($this_method_vars as $vkey => $vval) {
 						$$vkey = $vval;
 					}
+					if (!empty($dom[$key]['thead'])) {
+						$this->inthead = true;
+					}
 					// add a page (or trig AcceptPageBreak() for multicolumn mode)
 					$pre_y = $this->y;
 					if ((!$this->checkPageBreak($this->PageBreakTrigger + 1)) AND ($this->y < $pre_y)) {
@@ -21995,8 +22028,8 @@ Putting 1 is equivalent to putting 0 and calling Ln() just after. Default value:
 		if (isset($dictionary[$word_string])) {
 			return TCPDF_FONTS::UTF8StringToArray($dictionary[$word_string], $this->isunicode, $this->CurrentFont);
 		}
-		// suround word with '_' characters
-		$tmpword = array_merge(array(95), $word, array(95));
+		// surround word with '_' characters
+		$tmpword = array_merge(array(46), $word, array(46));
 		$tmpnumchars = $numchars + 2;
 		$maxpos = $tmpnumchars - $charmin;
 		for ($pos = 0; $pos < $maxpos; ++$pos) {
@@ -22008,15 +22041,18 @@ Putting 1 is equivalent to putting 0 and calling Ln() just after. Default value:
 					$pattern_length = count($pattern);
 					$digits = 1;
 					for ($j = 0; $j < $pattern_length; ++$j) {
-						// check if $pattern[$j] is a number
+						// check if $pattern[$j] is a number = hyphenation level (only numbers from 1 to 5 are valid)
 						if (($pattern[$j] >= 48) AND ($pattern[$j] <= 57)) {
 							if ($j == 0) {
 								$zero = $pos - 1;
 							} else {
 								$zero = $pos + $j - $digits;
 							}
-							if (!isset($hyphenword[$zero]) OR ($hyphenword[$zero] != $pattern[$j])) {
-								$hyphenword[$zero] = TCPDF_FONTS::unichr($pattern[$j], $this->isunicode);
+							// get hyphenation level
+							$level = ($pattern[$j] - 48);
+							// if two levels from two different patterns match at the same point, the higher one is selected.
+							if (!isset($hyphenword[$zero]) OR ($hyphenword[$zero] < $level)) {
+								$hyphenword[$zero] = $level;
 							}
 							++$digits;
 						}
@@ -22027,6 +22063,7 @@ Putting 1 is equivalent to putting 0 and calling Ln() just after. Default value:
 		$inserted = 0;
 		$maxpos = $numchars - $rightmin;
 		for ($i = $leftmin; $i <= $maxpos; ++$i) {
+			// only odd levels indicate allowed hyphenation points
 			if (isset($hyphenword[$i]) AND (($hyphenword[$i] % 2) != 0)) {
 				// 173 = soft hyphen character
 				array_splice($word, $i + $inserted, 0, 173);
@@ -22055,6 +22092,7 @@ Putting 1 is equivalent to putting 0 and calling Ln() just after. Default value:
 		$word = array(); // last word
 		$txtarr = array(); // text to be returned
 		$intag = false; // true if we are inside an HTML tag
+		$skip = false; // true to skip hyphenation
 		if (!is_array($patterns)) {
 			$patterns = TCPDF_STATIC::getHyphenPatternsFromTEX($patterns);
 		}
@@ -22062,7 +22100,7 @@ Putting 1 is equivalent to putting 0 and calling Ln() just after. Default value:
 		$unichars = TCPDF_FONTS::UTF8StringToArray($text, $this->isunicode, $this->CurrentFont);
 		// for each char
 		foreach ($unichars as $char) {
-			if ((!$intag) AND TCPDF_FONT_DATA::$uni_type[$char] == 'L') {
+			if ((!$intag) AND (!$skip) AND TCPDF_FONT_DATA::$uni_type[$char] == 'L') {
 				// letter character
 				$word[] = $char;
 			} else {
@@ -22079,6 +22117,23 @@ Putting 1 is equivalent to putting 0 and calling Ln() just after. Default value:
 				} elseif ($intag AND (chr($char) == '>')) {
 					// end of HTML tag
 					$intag = false;
+					// check for style tag
+					$expected = array(115, 116, 121, 108, 101); // = 'style'
+					$current = array_slice($txtarr, -6, 5); // last 5 chars
+					$compare = array_diff($expected, $current);
+					if (empty($compare)) {
+						// check if it is a closing tag
+						$expected = array(47); // = '/'
+						$current = array_slice($txtarr, -7, 1);
+						$compare = array_diff($expected, $current);
+						if (empty($compare)) {
+							// closing style tag
+							$skip = false;
+						} else {
+							// opening style tag
+							$skip = true;
+						}
+					}
 				}
 			}
 		}
