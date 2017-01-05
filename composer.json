@@ -22,6 +22,7 @@
 		"config",
 		"include",
 		"fpdi.php",
+		"fpdi2tcpdf_bridge.php",
 		"tcpdf.php",
 		"tcpdf_parser.php",
 		"tcpdf_import.php",
