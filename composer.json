@@ -1,6 +1,6 @@
 {
 	"name": "sosocio/tcpdf",
-	"version": "6.0.099c",
+	"version": "6.0.099.2",
 	"homepage": "http://www.tcpdf.org/",
 	"type": "library",
 	"description": "TCPDF is a PHP class for generating PDF documents and barcodes.",
