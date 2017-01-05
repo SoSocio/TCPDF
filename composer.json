@@ -21,6 +21,7 @@
 		"fonts",
 		"config",
 		"include",
+		"fpdi.php",
 		"tcpdf.php",
 		"tcpdf_parser.php",
 		"tcpdf_import.php",
