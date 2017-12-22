@@ -108,7 +108,7 @@ if (!class_exists('pdf_parserClass', false)) {
     
             $this->getPDFVersion();
     
-            $this->c = new pdf_contextClass($this->f);
+            $this->c = new pdf_context($this->f);
             
             // Read xref-Data
             $this->xref = array();
@@ -221,7 +221,7 @@ if (!class_exists('pdf_parserClass', false)) {
     
             if ($xrefPos === false) {
                 fseek($this->f, $offset);
-                $c = new pdf_contextClass($this->f);
+                $c = new pdf_context($this->f);
                 $xrefStreamObjDec = $this->pdf_read_value($c);
                 
                 if (is_array($xrefStreamObjDec) && isset($xrefStreamObjDec[0]) && $xrefStreamObjDec[0] == PDF_TYPE_OBJDEC) {
@@ -301,7 +301,7 @@ if (!class_exists('pdf_parserClass', false)) {
             
             fseek($this->f, $o_pos + $trailerPos + 7);
             
-            $c = new pdf_contextClass($this->f);
+            $c = new pdf_context($this->f);
     	    $trailer = $this->pdf_read_value($c);
     	    
     	    $c = null;
@@ -452,7 +452,7 @@ if (!class_exists('pdf_parserClass', false)) {
     		        	$e++;
     		        
     		        if ($this->actual_obj[1][1]['/Length'][0] == PDF_TYPE_OBJREF) {
-    		        	$tmp_c = new pdf_contextClass($this->f);
+    		        	$tmp_c = new pdf_context($this->f);
     		        	$tmp_length = $this->pdf_resolve_object($tmp_c, $this->actual_obj[1][1]['/Length']);
     		        	$length = $tmp_length[1][1];
     		        } else {

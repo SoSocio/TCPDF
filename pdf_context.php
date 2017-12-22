@@ -17,9 +17,9 @@
 //  limitations under the License.
 //
 
-if (!class_exists('pdf_contextClass', false)) {
+if (!class_exists('pdf_context', false)) {
     
-    class pdf_contextClass {
+    class pdf_context {
     
         /**
          * Modi
