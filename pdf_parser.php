@@ -46,9 +46,9 @@ if (!defined ('PDF_TYPE_REAL'))
     
 require_once('pdf_context.php');
 
-if (!class_exists('pdf_parserClass', false)) {
+if (!class_exists('pdf_parser', false)) {
     
-    class pdf_parserClass {
+    class pdf_parser {
     	
     	/**
          * Filename

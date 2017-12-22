@@ -19,7 +19,7 @@
 
 require_once('pdf_parser.php');
 
-class fpdi_pdf_parserClass extends pdf_parserClass {
+class fpdi_pdf_parserClass extends pdf_parser {
 
     /**
      * Pages
