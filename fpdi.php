@@ -97,10 +97,10 @@ class FPDI extends FPDF_TPL {
      * Returns a PDF parser object
      *
      * @param string $filename
-     * @return fpdi_pdf_parserClass
+     * @return fpdi_pdf_parser
      */
     function _getPdfParser($filename) {
-    	return new fpdi_pdf_parserClass($filename, $this);
+    	return new fpdi_pdf_parser($filename, $this);
     }
     
     /**
