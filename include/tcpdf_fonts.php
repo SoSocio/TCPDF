@@ -1149,7 +1149,7 @@ class TCPDF_FONTS {
 								$subsetglyphs[$g] = true;
 							}
 						}
-					}	
+					}
 					break;
 				}
 				case 6: { // Format 6: Trimmed table mapping
@@ -1406,7 +1406,7 @@ class TCPDF_FONTS {
 			$cid -= $cidoffset;
 			if ($font['subset'] AND (!isset($font['subsetchars'][$cid]))) {
 				// ignore the unused characters (font subsetting)
-				continue;
+				break;
 			}
 			if ($width != $font['dw']) {
 				if ($cid == ($prevcid + 1)) {

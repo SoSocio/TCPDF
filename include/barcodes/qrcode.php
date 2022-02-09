@@ -2703,7 +2703,7 @@ class QRcode {
 		foreach ($this->rsitems as $rs) {
 			if (($rs['pad'] != $pad) OR ($rs['nroots'] != $nroots) OR ($rs['mm'] != $symsize)
 				OR ($rs['gfpoly'] != $gfpoly) OR ($rs['fcr'] != $fcr) OR ($rs['prim'] != $prim)) {
-				continue;
+				break;
 			}
 			return $rs;
 		}
